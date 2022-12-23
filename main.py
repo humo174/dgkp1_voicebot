@@ -7,8 +7,8 @@ from creds import oauth_token, catalog_id, bot_api, allow_users
 
 bot = telebot.TeleBot(bot_api)
 
-try:
-    while 1 == 1:
+while 1 == 1:
+    try:
         @bot.message_handler(commands=['start'])
         def start_command(message):
             if message.chat.id in allow_users:
@@ -64,6 +64,6 @@ try:
 
 
         bot.polling(none_stop=True)
-except Exception as exc:
-    f = open(r'./error_connection.log', 'a+')
-    f.write(f'{datetime.datetime.now()} | ErrorConnection: {exc}\n\n\n')
+    except Exception as exc:
+        f = open(r'./error_connection.log', 'a+')
+        f.write(f'{datetime.datetime.now()} | ErrorConnection: {exc}\n\n\n')
