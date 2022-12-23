@@ -1,9 +1,8 @@
 from speechkit import Session, SpeechSynthesis
 import telebot
 from telebot import types
-from creds import oauth_token, catalog_id, bot_api
+from creds import oauth_token, catalog_id, bot_api, allow_users
 
-allow_users = (1134241949, 571876631)
 bot = telebot.TeleBot(bot_api)
 
 try:
