@@ -50,7 +50,7 @@ try:
                         audio.close()
                     except Exception as audiofail:
                         error_audio = open(r'./error_audio.log', 'a+')
-                        error_audio.write(f'{datetime.datetime.now()} | {audiofail}\n\n\n')
+                        error_audio.write(f'{datetime.datetime.now()} | AudioFail: {audiofail}\n\n\n')
                         error_audio.close()
                         bot.send_message(message.chat.id, f'Системная ошибка. Запись сохранена в лог. Обратитесь к '
                                                           f'разработчику')
