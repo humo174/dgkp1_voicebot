@@ -65,4 +65,5 @@ try:
 
         bot.polling(none_stop=True)
 except Exception as exc:
-    print(f'Rebooted service because {exc}')
+    f = open(r'./error_connection.log', 'a+')
+    f.write(f'{datetime.datetime.now()} | ErrorConnection: {exc}\n\n\n')
