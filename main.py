@@ -1,5 +1,6 @@
 from speechkit import Session, SpeechSynthesis
 import telebot
+import time
 from telebot import types
 from creds import oauth_token, catalog_id, bot_api, allow_users
 
@@ -40,8 +41,9 @@ try:
                     kbd = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
                     kbd1 = types.KeyboardButton(text='Озвучить')
                     kbd.add(kbd1)
-                    bot.send_message(message.chat.id, f'Вот готовый файл', reply_markup=kbd)
                     audio = open(r'./out.wav', 'rb')
+                    time.sleep(4)
+                    bot.send_message(message.chat.id, f'Аудиофайл сформирован успешно', reply_markup=kbd)
                     bot.send_audio(message.chat.id, audio)
                     audio.close()
 
