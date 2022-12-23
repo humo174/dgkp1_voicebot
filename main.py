@@ -55,8 +55,6 @@ try:
                         bot.send_message(message.chat.id, f'Системная ошибка. Запись сохранена в лог. Обратитесь к '
                                                           f'разработчику')
 
-
-
             if message.text == 'Озвучить' and message.chat.id in allow_users:
                 kbc = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
                 kbc1 = types.KeyboardButton(text='Отмена')
