@@ -29,13 +29,18 @@ try:
 
                 else:
                     text_to_sound = mes_to_sound.text
+                    kbcl = types.ReplyKeyboardRemove()
+                    bot.send_message(message.chat.id, f'Дождитесь формирования аудиофайла', reply_markup=kbcl)
                     session = Session.from_yandex_passport_oauth_token(oauth_token, catalog_id)
                     synthesizeaudio = SpeechSynthesis(session)
                     synthesizeaudio.synthesize(
                         str(f'out.wav'), text=f'{text_to_sound}',
                         voice='oksana', sampleRateHertz='16000'
                     )
-                    bot.send_message(message.chat.id, f'Вот готовый файл')
+                    kbd = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+                    kbd1 = types.KeyboardButton(text='Озвучить')
+                    kbd.add(kbd1)
+                    bot.send_message(message.chat.id, f'Вот готовый файл', reply_markup=kbd)
                     audio = open(r'./out.wav', 'rb')
                     bot.send_audio(message.chat.id, audio)
                     audio.close()
