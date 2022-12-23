@@ -1,10 +1,10 @@
 from speechkit import Session, SpeechSynthesis
 import telebot
 from telebot import types
-from creds import oauth_token, catalog_id
+from creds import oauth_token, catalog_id, bot_api
 
-bot = telebot.TeleBot('5707258988:AAEfQyhZUGWTYRoeNWAeHJoESpPwlmHNwaE')
 allow_users = (1134241949, 571876631)
+bot = telebot.TeleBot(bot_api)
 
 try:
     while 1 == 1:
