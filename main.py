@@ -1,6 +1,7 @@
 from speechkit import Session, SpeechSynthesis
 import telebot
 import time
+import datetime
 from telebot import types
 from creds import oauth_token, catalog_id, bot_api, allow_users
 
@@ -31,21 +32,30 @@ try:
                 else:
                     text_to_sound = mes_to_sound.text
                     kbcl = types.ReplyKeyboardRemove()
-                    bot.send_message(message.chat.id, f'Дождитесь формирования аудиофайла', reply_markup=kbcl)
-                    session = Session.from_yandex_passport_oauth_token(oauth_token, catalog_id)
-                    synthesizeaudio = SpeechSynthesis(session)
-                    synthesizeaudio.synthesize(
-                        str(f'out.wav'), text=f'{text_to_sound}',
-                        voice='oksana', sampleRateHertz='16000'
-                    )
-                    kbd = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
-                    kbd1 = types.KeyboardButton(text='Озвучить')
-                    kbd.add(kbd1)
-                    audio = open(r'./out.wav', 'rb')
-                    time.sleep(4)
-                    bot.send_message(message.chat.id, f'Аудиофайл сформирован успешно', reply_markup=kbd)
-                    bot.send_audio(message.chat.id, audio)
-                    audio.close()
+                    try:
+                        bot.send_message(message.chat.id, f'Дождитесь формирования аудиофайла', reply_markup=kbcl)
+                        session = Session.from_yandex_passport_oauth_token(oauth_token, catalog_id)
+                        synthesizeaudio = SpeechSynthesis(session)
+                        synthesizeaudio.synthesize(
+                            str(f'out.wav'), text=f'{text_to_sound}',
+                            voice='oksana', sampleRateHertz='16000'
+                        )
+                        kbd = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+                        kbd1 = types.KeyboardButton(text='Озвучить')
+                        kbd.add(kbd1)
+                        audio = open(r'./out.wav', 'rb')
+                        time.sleep(4)
+                        bot.send_message(message.chat.id, f'Аудиофайл сформирован успешно', reply_markup=kbd)
+                        bot.send_audio(message.chat.id, audio)
+                        audio.close()
+                    except Exception as audiofail:
+                        error_audio = open(r'./error_audio.log', 'a+')
+                        error_audio.write(f'{datetime.datetime.now()} | {audiofail}\n\n\n')
+                        error_audio.close()
+                        bot.send_message(message.chat.id, f'Системная ошибка. Запись сохранена в лог. Обратитесь к '
+                                                          f'разработчику')
+
+
 
             if message.text == 'Озвучить' and message.chat.id in allow_users:
                 kbc = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
