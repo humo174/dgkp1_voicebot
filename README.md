@@ -7,4 +7,4 @@ bot_api = 'TelegramBotApi'
 allow_users = (NumericIDUser1, NumericIDUser2)</code>
 <h2> Логирование </h2>
 Логи из-за ошибок создания и отправки аудиофайла будут сыпаться в <b>error_audio.log</b></br>
-Логи из-за ошибок соединения с серварами Telegram будут сыпаться в error_connection.log
+Логи из-за ошибок соединения с серварами Telegram будут сыпаться в <b>error_connection.log</b>
