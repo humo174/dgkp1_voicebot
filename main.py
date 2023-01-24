@@ -17,7 +17,10 @@ while 1 == 1:
                 kb.add(kb1)
                 bot.send_message(message.chat.id, f'Давай начнем работу!', reply_markup=kb)
             else:
-                bot.send_message(message.chat.id, f'У вас нет прав на пользование данным ботом')
+                bot.send_message(message.chat.id, f'У вас нет прав на пользование данным ботом, '
+                                                  f'перешлите это сообщение администратору\n\n'
+                                                  f'<code>{message.chat.id}</code>',
+                                 parse_mode='html')
 
 
         @bot.message_handler(content_types=['text'])
