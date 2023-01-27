@@ -2,71 +2,162 @@ from speechkit import Session, SpeechSynthesis
 import telebot
 import time
 import datetime
+import openpyxl
 from telebot import types
 from creds import oauth_token, catalog_id, bot_api, allow_users
 
 bot = telebot.TeleBot(bot_api)
 
+
+def convert_file(chatid):
+    @bot.message_handler(content_types=['document'])
+    def lets_convert(message):
+        if message.text != 'Отмена' and message.text is not None:
+            kbc = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+            kbc1 = types.KeyboardButton(text='Отмена')
+            kbc.add(kbc1)
+            msg = bot.send_message(message.chat.id, f'Я жду файл, либо жми "Отмена"', reply_markup=kbc)
+            bot.register_next_step_handler(msg, lets_convert)
+        elif message.text == 'Отмена':
+            kb = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+            kb1 = types.KeyboardButton(text='📢 Озвучить')
+            kb2 = types.KeyboardButton(text='📄 Сформировать файл')
+            kb.add(kb1, kb2)
+            bot.send_message(message.chat.id, f'Действие отменено', reply_markup=kb)
+        else:
+            file_name = f'{message.chat.id}.xlsx'
+            file_info = bot.get_file(message.document.file_id)
+            downloaded_file = bot.download_file(file_info.file_path)
+            with open(file_name, 'wb') as new_file:
+                new_file.write(downloaded_file)
+            bot.send_message(message.chat.id, f'Обрабатываю файл')
+
+            wb = openpyxl.load_workbook(f'./{message.chat.id}.xlsx')
+            sheet = wb.active
+            rows = sheet.max_row
+
+            wb_convert = openpyxl.Workbook()
+            wb_convert.create_sheet(title='Лист1', index=0)
+            del wb_convert['Sheet']
+            sheet_convert = wb_convert['Лист1']
+            sheet_convert['A1'] = 'number'
+            sheet_convert['B1'] = 'fio'
+
+            wb_decline = openpyxl.Workbook()
+            wb_decline.create_sheet(title='Лист1', index=0)
+            del wb_decline['Sheet']
+            sheet_decline = wb_decline['Лист1']
+            sheet_decline['A1'] = 'fio'
+
+            for i in range(1, rows + 1):
+                fio = sheet.cell(row=i, column=2)
+                phone = sheet.cell(row=i, column=8)
+                if fio.value is not None and fio.value != 'ФИО пациента' and phone.value is not None:
+                    a = (
+                        f'{((((phone.value.split(",")[0]).replace("(", "")).replace(")", "")).replace("-", "")).replace(" ", "")[2::]}',
+                        f'{fio.value}')
+                    sheet_convert.append(a)
+                if fio.value is not None and fio.value != 'ФИО пациента' and phone.value is None:
+                    b = (f'{fio.value}',)
+                    sheet_decline.append(b)
+
+            wb_decline.save(f'./{message.chat.id}-declined.xlsx')
+            wb_convert.save(f'./{message.chat.id}-converted.xlsx')
+            time.sleep(4)
+            kb = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+            kb1 = types.KeyboardButton(text='📢 Озвучить')
+            kb2 = types.KeyboardButton(text='📄 Сформировать файл')
+            kb.add(kb1, kb2)
+            with open(f'./{message.chat.id}-converted.xlsx', 'rb') as converted_file:
+                bot.send_document(message.chat.id, caption='Готовый файл для автообзвона', document=converted_file,
+                                  visible_file_name=f'Автообзвон {datetime.datetime.now().strftime("%d-%m-%Y")}.xlsx')
+
+            with open(f'./{message.chat.id}-declined.xlsx', 'rb') as declined_file:
+                bot.send_document(message.chat.id, caption="Отклоненные пациенты без номера телефона",
+                                  document=declined_file,
+                                  visible_file_name=f'Отклонено {datetime.datetime.now().strftime("%d-%m-%Y")}.xlsx',
+                                  reply_markup=kb)
+
+    conv_file = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+    conv_file_1 = types.KeyboardButton(text='Отмена')
+    conv_file.add(conv_file_1)
+    msg = bot.send_message(chatid, f'1. Сформируй файл в РМИС "БАРС" в меню: Отчеты → Регистратура → График записей\n'
+                                   f'2. Пересохрани скачанный файл в правильный формат .xlsx '
+                                   f'(Открыть файл → Сохранить как...)\n'
+                                   f'3. Пришли мне правильно сохраненный файл', reply_markup=conv_file)
+    bot.register_next_step_handler(msg, lets_convert)
+
+
+def lets_rock():
+    @bot.message_handler(content_types=['text'])
+    def message_main(message):
+        def ozvuch(message):
+            if message.text == 'Отмена':
+                kb = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+                kb1 = types.KeyboardButton(text='📢 Озвучить')
+                kb.add(kb1)
+                bot.send_message(message.chat.id, f'Запрос отменен', reply_markup=kb)
+
+            else:
+                text_to_sound = message.text
+                kbcl = types.ReplyKeyboardRemove()
+                try:
+                    bot.send_message(message.chat.id, f'Дождитесь формирования аудиофайла', reply_markup=kbcl)
+                    session = Session.from_yandex_passport_oauth_token(oauth_token, catalog_id)
+                    synthesizeaudio = SpeechSynthesis(session)
+                    synthesizeaudio.synthesize(
+                        str(f'./{message.chat.id}-out.wav'), text=f'{text_to_sound}',
+                        voice='oksana', sampleRateHertz='16000'
+                    )
+                    kb = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+                    kb1 = types.KeyboardButton(text='📢 Озвучить')
+                    kb2 = types.KeyboardButton(text='📄 Сформировать файл')
+                    kb.add(kb1, kb2)
+                    audio = open(f'./{message.chat.id}-out.wav', 'rb')
+                    time.sleep(4)
+                    bot.send_message(message.chat.id, f'Аудиофайл сформирован успешно', reply_markup=kb)
+                    bot.send_audio(message.chat.id, audio)
+                    audio.close()
+                except Exception as audiofail:
+                    error_audio = open(r'./error_audio.log', 'a+')
+                    error_audio.write(f'{datetime.datetime.now()} | AudioFail: {audiofail}\n\n\n')
+                    error_audio.close()
+                    bot.send_message(message.chat.id, f'Системная ошибка. Запись сохранена в лог. Обратитесь к '
+                                                      f'разработчику')
+
+        if message.text == '📢 Озвучить' and message.chat.id in allow_users:
+            kbc = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+            kbc1 = types.KeyboardButton(text='Отмена')
+            kbc.add(kbc1)
+            msg = bot.send_message(message.chat.id, f'Введите текст для озвучки', reply_markup=kbc)
+            bot.register_next_step_handler(msg, ozvuch)
+
+        if message.text == '📄 Сформировать файл':
+            convert_file(message.chat.id)
+
+
+def mainbody():
+    @bot.message_handler(commands=['start'])
+    def start_command(message):
+        if message.chat.id in allow_users:
+            kb = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+            kb1 = types.KeyboardButton(text='📢 Озвучить')
+            kb2 = types.KeyboardButton(text='📄 Сформировать файл')
+            kb.add(kb1, kb2)
+            bot.send_message(message.chat.id, f'Давай начнем работу!', reply_markup=kb)
+            lets_rock()
+        else:
+            bot.send_message(message.chat.id, f'У вас нет прав на пользование данным ботом, '
+                                              f'перешлите это сообщение администратору\n\n'
+                                              f'<code>{message.chat.id}</code>',
+                             parse_mode='html')
+
+    bot.polling(non_stop=True)
+
+
 while 1 == 1:
     try:
-        @bot.message_handler(commands=['start'])
-        def start_command(message):
-            if message.chat.id in allow_users:
-                kb = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
-                kb1 = types.KeyboardButton(text='Озвучить')
-                kb.add(kb1)
-                bot.send_message(message.chat.id, f'Давай начнем работу!', reply_markup=kb)
-            else:
-                bot.send_message(message.chat.id, f'У вас нет прав на пользование данным ботом, '
-                                                  f'перешлите это сообщение администратору\n\n'
-                                                  f'<code>{message.chat.id}</code>',
-                                 parse_mode='html')
-
-
-        @bot.message_handler(content_types=['text'])
-        def message_main(message):
-            def ozvuch(mes_to_sound):
-                if mes_to_sound.text == 'Отмена':
-                    kb = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
-                    kb1 = types.KeyboardButton(text='Озвучить')
-                    kb.add(kb1)
-                    bot.send_message(message.chat.id, f'Запрос отменен', reply_markup=kb)
-
-                else:
-                    text_to_sound = mes_to_sound.text
-                    kbcl = types.ReplyKeyboardRemove()
-                    try:
-                        bot.send_message(message.chat.id, f'Дождитесь формирования аудиофайла', reply_markup=kbcl)
-                        session = Session.from_yandex_passport_oauth_token(oauth_token, catalog_id)
-                        synthesizeaudio = SpeechSynthesis(session)
-                        synthesizeaudio.synthesize(
-                            str(f'out.wav'), text=f'{text_to_sound}',
-                            voice='oksana', sampleRateHertz='16000'
-                        )
-                        kbd = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
-                        kbd1 = types.KeyboardButton(text='Озвучить')
-                        kbd.add(kbd1)
-                        audio = open(r'./out.wav', 'rb')
-                        time.sleep(4)
-                        bot.send_message(message.chat.id, f'Аудиофайл сформирован успешно', reply_markup=kbd)
-                        bot.send_audio(message.chat.id, audio)
-                        audio.close()
-                    except Exception as audiofail:
-                        error_audio = open(r'./error_audio.log', 'a+')
-                        error_audio.write(f'{datetime.datetime.now()} | AudioFail: {audiofail}\n\n\n')
-                        error_audio.close()
-                        bot.send_message(message.chat.id, f'Системная ошибка. Запись сохранена в лог. Обратитесь к '
-                                                          f'разработчику')
-
-            if message.text == 'Озвучить' and message.chat.id in allow_users:
-                kbc = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
-                kbc1 = types.KeyboardButton(text='Отмена')
-                kbc.add(kbc1)
-                msg = bot.send_message(message.chat.id, f'Введите текст для озвучки', reply_markup=kbc)
-                bot.register_next_step_handler(msg, ozvuch)
-
-
-        bot.polling(none_stop=True)
+        mainbody()
     except Exception as exc:
         f = open(r'./error_connection.log', 'a+')
         f.write(f'{datetime.datetime.now()} | ErrorConnection: {exc}\n\n\n')
