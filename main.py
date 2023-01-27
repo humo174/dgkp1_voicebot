@@ -40,8 +40,8 @@ def convert_file(chatid):
             wb_convert.create_sheet(title='Лист1', index=0)
             del wb_convert['Sheet']
             sheet_convert = wb_convert['Лист1']
-            sheet_convert['A1'] = 'number'
-            sheet_convert['B1'] = 'fio'
+            sheet_convert['A1'] = 'Номер'
+            sheet_convert['B1'] = 'Комментарий'
 
             wb_decline = openpyxl.Workbook()
             wb_decline.create_sheet(title='Лист1', index=0)
@@ -69,7 +69,11 @@ def convert_file(chatid):
             kb2 = types.KeyboardButton(text='📄 Сформировать файл')
             kb.add(kb1, kb2)
             with open(f'./{message.chat.id}-converted.xlsx', 'rb') as converted_file:
-                bot.send_document(message.chat.id, caption='Готовый файл для автообзвона', document=converted_file,
+                bot.send_document(message.chat.id,
+                                  caption='Готовый файл для автообзвона\n'
+                                          'Необходимо открыть и просто <b>СОХРАНИТЬ</b> файл еще раз, '
+                                          'чтобы он загрузился в ВАТС "Ростелеком"',
+                                  document=converted_file, parse_mode='html',
                                   visible_file_name=f'Автообзвон {datetime.datetime.now().strftime("%d-%m-%Y")}.xlsx')
 
             with open(f'./{message.chat.id}-declined.xlsx', 'rb') as declined_file:
