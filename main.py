@@ -164,5 +164,5 @@ while 1 == 1:
         mainbody()
     except Exception as exc:
         f = open(r'./error_connection.log', 'a+')
-        f.write(f'{datetime.datetime.now()} | ErrorConnection: {exc}\n\n\n')
+        f.write(f'{datetime.datetime.now()} | ErrorConnection: {exc}\n')
         f.close()
