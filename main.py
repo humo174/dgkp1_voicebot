@@ -1,3 +1,5 @@
+import zipfile
+
 from speechkit import Session, SpeechSynthesis
 import telebot
 import time
@@ -32,55 +34,68 @@ def convert_file(chatid):
                 new_file.write(downloaded_file)
             bot.send_message(message.chat.id, f'Обрабатываю файл')
 
-            wb = openpyxl.load_workbook(f'./{message.chat.id}.xlsx')
-            sheet = wb.active
-            rows = sheet.max_row
+            try:
+                wb = openpyxl.load_workbook(f'./{message.chat.id}.xlsx')
+                sheet = wb.active
+                rows = sheet.max_row
 
-            wb_convert = openpyxl.Workbook()
-            wb_convert.create_sheet(title='Лист1', index=0)
-            del wb_convert['Sheet']
-            sheet_convert = wb_convert['Лист1']
-            sheet_convert['A1'] = 'Номер'
-            sheet_convert['B1'] = 'Комментарий'
+                wb_convert = openpyxl.Workbook()
+                wb_convert.create_sheet(title='Лист1', index=0)
+                del wb_convert['Sheet']
+                sheet_convert = wb_convert['Лист1']
+                sheet_convert['A1'] = 'Номер'
+                sheet_convert['B1'] = 'Комментарий'
 
-            wb_decline = openpyxl.Workbook()
-            wb_decline.create_sheet(title='Лист1', index=0)
-            del wb_decline['Sheet']
-            sheet_decline = wb_decline['Лист1']
-            sheet_decline['A1'] = 'fio'
+                wb_decline = openpyxl.Workbook()
+                wb_decline.create_sheet(title='Лист1', index=0)
+                del wb_decline['Sheet']
+                sheet_decline = wb_decline['Лист1']
+                sheet_decline['A1'] = 'fio'
 
-            for i in range(1, rows + 1):
-                fio = sheet.cell(row=i, column=2)
-                phone = sheet.cell(row=i, column=8)
-                if fio.value is not None and fio.value != 'ФИО пациента' and phone.value is not None:
-                    a = (
-                        f'{((((phone.value.split(",")[0]).replace("(", "")).replace(")", "")).replace("-", "")).replace(" ", "")[2::]}',
-                        f'{fio.value}')
-                    sheet_convert.append(a)
-                if fio.value is not None and fio.value != 'ФИО пациента' and phone.value is None:
-                    b = (f'{fio.value}',)
-                    sheet_decline.append(b)
+                for i in range(1, rows + 1):
+                    fio = sheet.cell(row=i, column=2)
+                    phone = sheet.cell(row=i, column=8)
+                    if fio.value is not None and fio.value != 'ФИО пациента' and phone.value is not None:
+                        a = (
+                            f'{((((phone.value.split(",")[0]).replace("(", "")).replace(")", "")).replace("-", "")).replace(" ", "")[2::]}',
+                            f'{fio.value}')
+                        sheet_convert.append(a)
+                    if fio.value is not None and fio.value != 'ФИО пациента' and phone.value is None:
+                        b = (f'{fio.value}',)
+                        sheet_decline.append(b)
 
-            wb_decline.save(f'./{message.chat.id}-declined.xlsx')
-            wb_convert.save(f'./{message.chat.id}-converted.xlsx')
-            time.sleep(4)
-            kb = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
-            kb1 = types.KeyboardButton(text='📢 Озвучить')
-            kb2 = types.KeyboardButton(text='📄 Сформировать файл')
-            kb.add(kb1, kb2)
-            with open(f'./{message.chat.id}-converted.xlsx', 'rb') as converted_file:
-                bot.send_document(message.chat.id,
-                                  caption='Готовый файл для автообзвона\n'
-                                          'Необходимо открыть и просто <b>СОХРАНИТЬ</b> файл еще раз, '
-                                          'чтобы он загрузился в ВАТС "Ростелеком"',
-                                  document=converted_file, parse_mode='html',
-                                  visible_file_name=f'Автообзвон {datetime.datetime.now().strftime("%d-%m-%Y")}.xlsx')
+                wb_decline.save(f'./{message.chat.id}-declined.xlsx')
+                wb_convert.save(f'./{message.chat.id}-converted.xlsx')
+                time.sleep(4)
+                kb = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+                kb1 = types.KeyboardButton(text='📢 Озвучить')
+                kb2 = types.KeyboardButton(text='📄 Сформировать файл')
+                kb.add(kb1, kb2)
+                with open(f'./{message.chat.id}-converted.xlsx', 'rb') as converted_file:
+                    bot.send_document(message.chat.id,
+                                      caption='Готовый файл для автообзвона\n'
+                                              'Необходимо открыть и просто <b>СОХРАНИТЬ</b> файл еще раз, '
+                                              'чтобы он загрузился в ВАТС "Ростелеком"',
+                                      document=converted_file, parse_mode='html',
+                                      visible_file_name=f'Автообзвон {datetime.datetime.now().strftime("%d-%m-%Y")}'
+                                                        f'.xlsx')
 
-            with open(f'./{message.chat.id}-declined.xlsx', 'rb') as declined_file:
-                bot.send_document(message.chat.id, caption="Отклоненные пациенты без номера телефона",
-                                  document=declined_file,
-                                  visible_file_name=f'Отклонено {datetime.datetime.now().strftime("%d-%m-%Y")}.xlsx',
-                                  reply_markup=kb)
+                with open(f'./{message.chat.id}-declined.xlsx', 'rb') as declined_file:
+                    bot.send_document(message.chat.id, caption="Отклоненные пациенты без номера телефона",
+                                      document=declined_file,
+                                      visible_file_name=f'Отклонено {datetime.datetime.now().strftime("%d-%m-%Y")}'
+                                                        f'.xlsx', reply_markup=kb)
+            except zipfile.BadZipfile:
+                time.sleep(2)
+                conv_file = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+                conv_file_1 = types.KeyboardButton(text='Отмена')
+                conv_file.add(conv_file_1)
+                msg = bot.send_message(message.chat.id, f'Ошибка при обработке файла\nЗагруженный файл не '
+                                                        f'соответствует '
+                                                        f'скелету. Убедитесь, что сформированный файл пересохранен как '
+                                                        f'"Книга Excel (*.xlsx)"\n\nОжидаю правильный файл',
+                                       reply_markup=conv_file)
+                bot.register_next_step_handler(msg, lets_convert)
 
     conv_file = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
     conv_file_1 = types.KeyboardButton(text='Отмена')
