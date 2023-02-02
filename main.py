@@ -1,12 +1,27 @@
+import subprocess
+import sys
 import zipfile
-
-from speechkit import Session, SpeechSynthesis
-import telebot
 import time
 import datetime
-import openpyxl
-from telebot import types
 from creds import oauth_token, catalog_id, bot_api, allow_users
+
+
+def install(package):
+    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+
+
+checkImports = False
+while not checkImports:
+    try:
+        import telebot
+        import openpyxl
+        from telebot import types
+        from speechkit import Session, SpeechSynthesis
+        checkImports = True
+    except ImportError:
+        install('pytelegrambotapi')
+        install('speechkit')
+        install('openpyxl')
 
 bot = telebot.TeleBot(bot_api)
 
