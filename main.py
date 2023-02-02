@@ -3,7 +3,7 @@ import sys
 import zipfile
 import time
 import datetime
-from creds import oauth_token, catalog_id, bot_api, allow_users
+from creds import oauth_token, catalog_id, bot_api, allow_users, admin_id
 
 
 def install(package):
@@ -17,6 +17,7 @@ while not checkImports:
         import openpyxl
         from telebot import types
         from speechkit import Session, SpeechSynthesis
+
         checkImports = True
     except ImportError:
         install('pytelegrambotapi')
@@ -129,7 +130,8 @@ def lets_rock():
             if message.text == 'Отмена':
                 kb = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
                 kb1 = types.KeyboardButton(text='📢 Озвучить')
-                kb.add(kb1)
+                kb2 = types.KeyboardButton(text='📄 Сформировать файл')
+                kb.add(kb1, kb2)
                 bot.send_message(message.chat.id, f'Запрос отменен', reply_markup=kb)
 
             else:
