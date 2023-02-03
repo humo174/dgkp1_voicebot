@@ -51,7 +51,7 @@ def convert_file(chatid):
             bot.send_message(message.chat.id, f'Обрабатываю файл')
 
             try:
-                wb = openpyxl.load_workbook(f'./{message.chat.id}.xlsx')
+                wb = openpyxl.load_workbook(f'{message.chat.id}.xlsx')
                 sheet = wb.active
                 rows = sheet.max_row
 
@@ -80,14 +80,14 @@ def convert_file(chatid):
                         b = (f'{fio.value}',)
                         sheet_decline.append(b)
 
-                wb_decline.save(f'./{message.chat.id}-declined.xlsx')
-                wb_convert.save(f'./{message.chat.id}-converted.xlsx')
+                wb_decline.save(f'{message.chat.id}-declined.xlsx')
+                wb_convert.save(f'{message.chat.id}-converted.xlsx')
                 time.sleep(4)
                 kb = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
                 kb1 = types.KeyboardButton(text='📢 Озвучить')
                 kb2 = types.KeyboardButton(text='📄 Сформировать файл')
                 kb.add(kb1, kb2)
-                with open(f'./{message.chat.id}-converted.xlsx', 'rb') as converted_file:
+                with open(f'{message.chat.id}-converted.xlsx', 'rb') as converted_file:
                     bot.send_document(message.chat.id,
                                       caption='Готовый файл для автообзвона\n'
                                               'Необходимо открыть и просто <b>СОХРАНИТЬ</b> файл еще раз, '
@@ -96,7 +96,7 @@ def convert_file(chatid):
                                       visible_file_name=f'Автообзвон {datetime.datetime.now().strftime("%d-%m-%Y")}'
                                                         f'.xlsx')
 
-                with open(f'./{message.chat.id}-declined.xlsx', 'rb') as declined_file:
+                with open(f'{message.chat.id}-declined.xlsx', 'rb') as declined_file:
                     bot.send_document(message.chat.id, caption="Отклоненные пациенты без номера телефона",
                                       document=declined_file,
                                       visible_file_name=f'Отклонено {datetime.datetime.now().strftime("%d-%m-%Y")}'
@@ -142,20 +142,20 @@ def lets_rock():
                     session = Session.from_yandex_passport_oauth_token(oauth_token, catalog_id)
                     synthesizeaudio = SpeechSynthesis(session)
                     synthesizeaudio.synthesize(
-                        str(f'./{message.chat.id}-out.wav'), text=f'{text_to_sound}',
+                        str(f'{message.chat.id}-out.wav'), text=f'{text_to_sound}',
                         voice='oksana', sampleRateHertz='16000'
                     )
                     kb = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
                     kb1 = types.KeyboardButton(text='📢 Озвучить')
                     kb2 = types.KeyboardButton(text='📄 Сформировать файл')
                     kb.add(kb1, kb2)
-                    audio = open(f'./{message.chat.id}-out.wav', 'rb')
+                    audio = open(f'{message.chat.id}-out.wav', 'rb')
                     time.sleep(4)
                     bot.send_message(message.chat.id, f'Аудиофайл сформирован успешно', reply_markup=kb)
                     bot.send_audio(message.chat.id, audio)
                     audio.close()
                 except Exception as audiofail:
-                    error_audio = open(r'./error_audio.log', 'a+')
+                    error_audio = open(r'error_audio.log', 'a+')
                     error_audio.write(f'{datetime.datetime.now()} | AudioFail: {audiofail}\n\n\n')
                     error_audio.close()
                     bot.send_message(message.chat.id, f'Системная ошибка. Запись сохранена в лог. Обратитесь к '
@@ -191,10 +191,11 @@ def mainbody():
     bot.polling(non_stop=True)
 
 
+bot.send_message(admin_id, f'Бот перезапущен')
 while 1 == 1:
     try:
         mainbody()
     except Exception as exc:
-        f = open(r'./error_connection.log', 'a+')
+        f = open(r'error_connection.log', 'a+')
         f.write(f'{datetime.datetime.now()} | ErrorConnection: {exc}\n')
         f.close()
