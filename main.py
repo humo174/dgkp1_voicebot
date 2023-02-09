@@ -105,8 +105,7 @@ def convert_file(chatid):
                 with open(f'{message.chat.id}-converted.xlsx', 'rb') as converted_file:
                     bot.send_document(message.chat.id,
                                       caption='Готовый файл для автообзвона\n'
-                                              'Необходимо открыть и просто <b>СОХРАНИТЬ</b> файл еще раз, '
-                                              'чтобы он загрузился в ВАТС "Ростелеком"',
+                                              'Просто импортируй его в ВАТС "Ростелеком"',
                                       document=converted_file, parse_mode='html',
                                       visible_file_name=f'Автообзвон {datetime.datetime.now().strftime("%d-%m-%Y")}'
                                                         f'.xlsx')
