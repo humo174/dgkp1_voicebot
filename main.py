@@ -3,8 +3,6 @@ import sys
 import zipfile
 import time
 import datetime
-import pandas as pd
-import xlsxwriter
 from creds import oauth_token, catalog_id, bot_api, allow_users, admin_id
 
 
@@ -19,12 +17,16 @@ while not checkImports:
         import openpyxl
         from telebot import types
         from speechkit import Session, SpeechSynthesis
+        import pandas as pd
+        import xlsxwriter
 
         checkImports = True
     except ImportError:
         install('pytelegrambotapi')
         install('speechkit')
         install('openpyxl')
+        install('pandas')
+        install('xlsxwriter')
 
 bot = telebot.TeleBot(bot_api)
 
