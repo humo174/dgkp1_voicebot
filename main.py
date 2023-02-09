@@ -3,6 +3,8 @@ import sys
 import zipfile
 import time
 import datetime
+import pandas as pd
+import xlsxwriter
 from creds import oauth_token, catalog_id, bot_api, allow_users, admin_id
 
 
@@ -82,6 +84,19 @@ def convert_file(chatid):
 
                 wb_decline.save(f'{message.chat.id}-declined.xlsx')
                 wb_convert.save(f'{message.chat.id}-converted.xlsx')
+
+                df = pd.read_excel(f'{message.chat.id}-converted.xlsx', sheet_name='Лист1')
+                workbook = xlsxwriter.Workbook(f'{message.chat.id}-converted.xlsx')
+                worksheet = workbook.add_worksheet('Лист1')
+                worksheet.write('A1', 'Номер')
+                worksheet.write('B1', 'Комментарий')
+                for i in range(len(df)):
+                    worksheet.write('A' + str(i + 2), str(df['Номер'][i]))
+                    worksheet.write('B' + str(i + 2), str(df['Комментарий'][i]))
+
+                workbook.close()
+
+
                 time.sleep(4)
                 kb = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
                 kb1 = types.KeyboardButton(text='📢 Озвучить')
