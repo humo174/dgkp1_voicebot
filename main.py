@@ -216,6 +216,32 @@ def mainbody():
                                               f'<code>{message.chat.id}</code>',
                              parse_mode='html')
 
+    @bot.message_handler(commands=['add'])
+    def add_command(message):
+        if message.chat.id == admin_id:
+            if message.text == '/add':
+                pass
+            elif message.text != '/add' and message.text.split(' ')[0] == '/add':
+                newallow = []
+                try:
+                    with open('creds.py', 'r+', encoding='utf-8') as fo:
+                        for line in fo.readlines():
+                            if line.find('allow_users =') == -1:
+                                newallow.append(line)
+                            if line.find('allow_users =') != -1:
+                                oldstring = f'{line[:-1:]}'
+                                newallow.append(oldstring.replace(")", f", {int(message.text.split(' ')[1])})\n"))
+                                bot.send_message(message.chat.id, f'Добавлен пользователь с ID = '
+                                                                  f'{int(message.text.split(" ")[1])}')
+
+                    with open('creds.py', 'r+', encoding='utf-8') as fo:
+                        for line in newallow:
+                            fo.write(line)
+                except ValueError:
+                    bot.send_message(message.chat.id, f'Неверный формат ID. Должен быть целым числом')
+        else:
+            pass
+
     bot.polling(non_stop=True)
 
 
