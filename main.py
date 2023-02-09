@@ -95,8 +95,6 @@ def convert_file(chatid):
                     worksheet.write('B' + str(i + 2), str(df['Комментарий'][i]))
 
                 workbook.close()
-
-
                 time.sleep(4)
                 kb = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
                 kb1 = types.KeyboardButton(text='📢 Озвучить')
