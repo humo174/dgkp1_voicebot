@@ -31,6 +31,20 @@ while not checkImports:
 bot = telebot.TeleBot(bot_api)
 
 
+def update_notice():
+    try:
+        with open('updatedone', 'r', encoding='utf-8') as done:
+            done.close()
+    except FileNotFoundError:
+        with open('update', 'r', encoding='utf-8') as update_open:
+            notice = update_open.read()
+            for user in allow_users:
+                bot.send_message(user, f'{notice}', parse_mode='html')
+
+        with open('updatedone', 'w+', encoding='utf-8') as done:
+            done.close()
+
+
 def convert_file(chatid):
     @bot.message_handler(content_types=['document'])
     def lets_convert(message):
@@ -205,6 +219,7 @@ def mainbody():
     bot.polling(non_stop=True)
 
 
+update_notice()
 bot.send_message(admin_id, f'Бот перезапущен')
 while 1 == 1:
     try:
