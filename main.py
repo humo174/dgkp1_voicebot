@@ -19,7 +19,7 @@ while not checkImports:
         from speechkit import Session, SpeechSynthesis
         import pandas as pd
         import xlsxwriter
-
+        from thefuzz import fuzz as f
         checkImports = True
     except ImportError:
         install('pytelegrambotapi')
@@ -27,6 +27,9 @@ while not checkImports:
         install('openpyxl')
         install('pandas')
         install('xlsxwriter')
+        install('thefuzz')
+        install('python-Levenshtein')
+        install('lxml')
 
 bot = telebot.TeleBot(bot_api)
 
@@ -36,7 +39,7 @@ def update_notice():
         with open('updatedone', 'r', encoding='utf-8') as done:
             done.close()
     except FileNotFoundError:
-        with open('update', 'r', encoding='utf-8') as update_open:
+        with open('update.md', 'r', encoding='utf-8') as update_open:
             notice = update_open.read()
             for user in allow_users:
                 bot.send_message(user, f'{notice}', parse_mode='html')
@@ -61,7 +64,8 @@ def convert_file(chatid):
             kb.add(kb1, kb2)
             bot.send_message(message.chat.id, f'Действие отменено', reply_markup=kb)
         else:
-            file_name = f'{message.chat.id}.xlsx'
+            # file_name = f'{message.chat.id}.xlsx'
+            file_name = f'{message.chat.id}.xls'
             file_info = bot.get_file(message.document.file_id)
             downloaded_file = bot.download_file(file_info.file_path)
             with open(file_name, 'wb') as new_file:
@@ -69,48 +73,49 @@ def convert_file(chatid):
             bot.send_message(message.chat.id, f'Обрабатываю файл')
 
             try:
-                wb = openpyxl.load_workbook(f'{message.chat.id}.xlsx')
-                sheet = wb.active
-                rows = sheet.max_row
+                df = pd.read_html(f'{message.chat.id}.xls')
+                df5 = pd.DataFrame()
+                df6 = pd.DataFrame()
+                for j in range(len(df)):
+                    df2 = pd.DataFrame(df[j])
+                    df4 = pd.DataFrame(columns=['ФИО'])
+                    df2 = df2.drop(columns=[0, 2, 3, 4, 5, 6, 8, 9, 10], axis=1)
+                    df2 = df2.rename(columns={1: "ФИО", 7: "Номер"})
+                    df3 = pd.DataFrame(columns=['ФИО', "Номер"])
+                    df2 = df2[(df2.ФИО != "ФИО пациента")]
+                    df4 = df2[df2['Номер'].isnull()].reset_index()
+                    df2 = df2.dropna().reset_index()
 
-                wb_convert = openpyxl.Workbook()
-                wb_convert.create_sheet(title='Лист1', index=0)
-                del wb_convert['Sheet']
-                sheet_convert = wb_convert['Лист1']
-                sheet_convert['A1'] = 'Номер'
-                sheet_convert['B1'] = 'Комментарий'
+                    for i in range(len(df2)):
+                        if f.WRatio('Врач: ', df2['ФИО'][i]) < 70:
+                            for c in range(0, (df2['Номер'][i].count(',') + 1)):
+                                if df2['Номер'][i].count(',') >= 1:
+                                    df3 = df3.append({'ФИО': df2['ФИО'][i], 'Номер': (
+                                        ((((df2['Номер'][i].split(",")[c]).replace("(", "")).replace(
+                                            ")", "")).replace("-", "")).replace(" ", "")[2::])}, ignore_index=True)
+                                else:
+                                    df3 = df3.append({'ФИО': df2['ФИО'][i], 'Номер': (
+                                        ((((df2['Номер'][i].split(",")[0]).replace("(", "")).replace(
+                                            ")", "")).replace("-", "")).replace(" ", "")[2::])}, ignore_index=True)
 
-                wb_decline = openpyxl.Workbook()
-                wb_decline.create_sheet(title='Лист1', index=0)
-                del wb_decline['Sheet']
-                sheet_decline = wb_decline['Лист1']
-                sheet_decline['A1'] = 'fio'
+                    df5 = df5.append(df3, ignore_index=True)
+                    df6 = df6.append(df4, ignore_index=True)
 
-                for i in range(1, rows + 1):
-                    fio = sheet.cell(row=i, column=2)
-                    phone = sheet.cell(row=i, column=8)
-                    if fio.value is not None and fio.value != 'ФИО пациента' and phone.value is not None:
-                        a = (
-                            f'{((((phone.value.split(",")[0]).replace("(", "")).replace(")", "")).replace("-", "")).replace(" ", "")[2::]}',
-                            f'{fio.value}')
-                        sheet_convert.append(a)
-                    if fio.value is not None and fio.value != 'ФИО пациента' and phone.value is None:
-                        b = (f'{fio.value}',)
-                        sheet_decline.append(b)
-
-                wb_decline.save(f'{message.chat.id}-declined.xlsx')
-                wb_convert.save(f'{message.chat.id}-converted.xlsx')
-
-                df = pd.read_excel(f'{message.chat.id}-converted.xlsx', sheet_name='Лист1')
                 workbook = xlsxwriter.Workbook(f'{message.chat.id}-converted.xlsx')
+                workbook1 = xlsxwriter.Workbook(f'{message.chat.id}-declined.xlsx')
                 worksheet = workbook.add_worksheet('Лист1')
+                worksheet1 = workbook1.add_worksheet('Лист1')
                 worksheet.write('A1', 'Номер')
                 worksheet.write('B1', 'Комментарий')
-                for i in range(len(df)):
-                    worksheet.write('A' + str(i + 2), str(df['Номер'][i]))
-                    worksheet.write('B' + str(i + 2), str(df['Комментарий'][i]))
-
+                worksheet1.write('A1', 'ФИО')
+                for i in range(len(df6)):
+                    worksheet1.write('A' + str(i + 1), str(df6['ФИО'][i]))
+                for i in range(len(df5)):
+                    worksheet.write('A' + str(i + 1), str(df5['Номер'][i]))
+                    worksheet.write('B' + str(i + 1), str(df5['ФИО'][i]))
                 workbook.close()
+                workbook1.close()
+
                 time.sleep(4)
                 kb = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
                 kb1 = types.KeyboardButton(text='📢 Озвучить')
@@ -129,6 +134,7 @@ def convert_file(chatid):
                                       document=declined_file,
                                       visible_file_name=f'Отклонено {datetime.datetime.now().strftime("%d-%m-%Y")}'
                                                         f'.xlsx', reply_markup=kb)
+
             except zipfile.BadZipfile:
                 time.sleep(2)
                 conv_file = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
