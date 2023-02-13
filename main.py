@@ -68,6 +68,21 @@ def add_allow_user(message):
         bot.send_message(message.chat.id, f'Неверный формат ID')
 
 
+def del_allow_user(message):
+    with open(r'creds.json', 'r', encoding='utf-8') as read:
+        data = json.load(read)
+
+    try:
+        data['allow_users'].remove(int(message.text.split(" ")[1]))
+
+        with open(r'creds.json', 'w', encoding='utf-8') as write:
+            json.dump(data, write)
+
+        bot.send_message(message.chat.id, f'Удален пользователь с ID = {int(message.text.split(" ")[1])}')
+    except ValueError:
+        bot.send_message(message.chat.id, f'Пользователь с таким ID не найден')
+
+
 def convert_file(chatid):
     @bot.message_handler(content_types=['document'])
     def lets_convert(message):
@@ -258,6 +273,17 @@ def mainbody():
                 pass
             elif message.text != '/add' and message.text.split(' ')[0] == '/add':
                 add_allow_user(message)
+
+        else:
+            pass
+
+    @bot.message_handler(commands=['del'])
+    def add_command(message):
+        if message.chat.id == read_json()['admin_id']:
+            if message.text == '/del':
+                pass
+            elif message.text != '/del' and message.text.split(' ')[0] == '/del':
+                del_allow_user(message)
 
         else:
             pass
