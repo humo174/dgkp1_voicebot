@@ -1,13 +1,17 @@
+import json
 import subprocess
 import sys
-import zipfile
 import time
 import datetime
-from creds import oauth_token, catalog_id, bot_api, allow_users, admin_id
 
 
 def install(package):
     subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+
+
+def read_json():
+    with open(r'creds.json', 'r', encoding='utf-8') as read:
+        return json.load(read)
 
 
 checkImports = False
@@ -20,6 +24,7 @@ while not checkImports:
         import pandas as pd
         import xlsxwriter
         from thefuzz import fuzz as f
+
         checkImports = True
     except ImportError:
         install('pytelegrambotapi')
@@ -31,7 +36,7 @@ while not checkImports:
         install('python-Levenshtein')
         install('lxml')
 
-bot = telebot.TeleBot(bot_api)
+bot = telebot.TeleBot(read_json()['bot_api'])
 
 
 def update_notice():
@@ -41,11 +46,26 @@ def update_notice():
     except FileNotFoundError:
         with open('update.md', 'r', encoding='utf-8') as update_open:
             notice = update_open.read()
-            for user in allow_users:
+            for user in read_json()['allow_users']:
                 bot.send_message(user, f'{notice}', parse_mode='html')
 
         with open('updatedone', 'w+', encoding='utf-8') as done:
             done.close()
+
+
+def add_allow_user(message):
+    with open(r'creds.json', 'r', encoding='utf-8') as read:
+        data = json.load(read)
+
+    try:
+        data['allow_users'].append(int(message.text.split(" ")[1]))
+
+        with open(r'creds.json', 'w', encoding='utf-8') as write:
+            json.dump(data, write)
+
+        bot.send_message(message.chat.id, f'Добавлен пользователь с ID = {int(message.text.split(" ")[1])}')
+    except ValueError:
+        bot.send_message(message.chat.id, f'Неверный формат ID')
 
 
 def convert_file(chatid):
@@ -71,10 +91,10 @@ def convert_file(chatid):
                 downloaded_file = bot.download_file(file_info.file_path)
                 with open(file_name, 'wb') as new_file:
                     new_file.write(downloaded_file)
-                bot.send_message(message.chat.id, f'Обрабатываю файл')
 
                 try:
                     df = pd.read_html(f'{message.chat.id}.xls')
+                    bot.send_message(message.chat.id, f'Обрабатываю файл')
                     df5 = pd.DataFrame()
                     df6 = pd.DataFrame()
                     for j in range(len(df)):
@@ -136,14 +156,15 @@ def convert_file(chatid):
                                           visible_file_name=f'Отклонено {datetime.datetime.now().strftime("%d-%m-%Y")}'
                                                             f'.xlsx', reply_markup=kb)
 
-                except zipfile.BadZipfile:
+                except (ImportError, ValueError):
                     time.sleep(2)
                     conv_file = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
                     conv_file_1 = types.KeyboardButton(text='Отмена')
                     conv_file.add(conv_file_1)
-                    msg = bot.send_message(message.chat.id, f'Ошибка при обработке файла\nЗагруженный файл не '
-                                                            f'соответствует '
-                                                            f'скелету.\n\nОжидаю правильный файл',
+                    msg = bot.send_message(message.chat.id, f'Ошибка при обработке файла\nЗагруженный файл '
+                                                            f'не соответствует структуре. Убедитесь, что загружаемый '
+                                                            f'файл является исходным из РМИС "БАРС"\n\n'
+                                                            f'Ожидаю правильный файл',
                                            reply_markup=conv_file)
                     bot.register_next_step_handler(msg, lets_convert)
 
@@ -152,8 +173,7 @@ def convert_file(chatid):
                 conv_file_1 = types.KeyboardButton(text='Отмена')
                 conv_file.add(conv_file_1)
                 msg = bot.send_message(message.chat.id, f'Ошибка при обработке файла\nЗагруженный файл не '
-                                                        f'соответствует '
-                                                        f'скелету.\n\nОжидаю правильный файл',
+                                                        f'является файлом .xls\n\nОжидаю правильный файл',
                                        reply_markup=conv_file)
                 bot.register_next_step_handler(msg, lets_convert)
 
@@ -181,7 +201,8 @@ def lets_rock():
                 kbcl = types.ReplyKeyboardRemove()
                 try:
                     bot.send_message(message.chat.id, f'Дождитесь формирования аудиофайла', reply_markup=kbcl)
-                    session = Session.from_yandex_passport_oauth_token(oauth_token, catalog_id)
+                    session = Session.from_yandex_passport_oauth_token(read_json()['oauth_token'],
+                                                                       read_json()['catalog_id'])
                     synthesizeaudio = SpeechSynthesis(session)
                     synthesizeaudio.synthesize(
                         str(f'{message.chat.id}-out.wav'), text=f'{text_to_sound}',
@@ -203,7 +224,7 @@ def lets_rock():
                     bot.send_message(message.chat.id, f'Системная ошибка. Запись сохранена в лог. Обратитесь к '
                                                       f'разработчику')
 
-        if message.text == '📢 Озвучить' and message.chat.id in allow_users:
+        if message.text == '📢 Озвучить' and message.chat.id in read_json()['allow_users']:
             kbc = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
             kbc1 = types.KeyboardButton(text='Отмена')
             kbc.add(kbc1)
@@ -217,7 +238,7 @@ def lets_rock():
 def mainbody():
     @bot.message_handler(commands=['start'])
     def start_command(message):
-        if message.chat.id in allow_users:
+        if message.chat.id in read_json()['allow_users']:
             kb = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
             kb1 = types.KeyboardButton(text='📢 Озвучить')
             kb2 = types.KeyboardButton(text='📄 Сформировать файл')
@@ -232,27 +253,12 @@ def mainbody():
 
     @bot.message_handler(commands=['add'])
     def add_command(message):
-        if message.chat.id == admin_id:
+        if message.chat.id == read_json()['admin_id']:
             if message.text == '/add':
                 pass
             elif message.text != '/add' and message.text.split(' ')[0] == '/add':
-                newallow = []
-                try:
-                    with open('creds.py', 'r+', encoding='utf-8') as fo:
-                        for line in fo.readlines():
-                            if line.find('allow_users =') == -1:
-                                newallow.append(line)
-                            if line.find('allow_users =') != -1:
-                                oldstring = f'{line[:-1:]}'
-                                newallow.append(oldstring.replace(")", f", {int(message.text.split(' ')[1])})\n"))
-                                bot.send_message(message.chat.id, f'Добавлен пользователь с ID = '
-                                                                  f'{int(message.text.split(" ")[1])}')
+                add_allow_user(message)
 
-                    with open('creds.py', 'r+', encoding='utf-8') as fo:
-                        for line in newallow:
-                            fo.write(line)
-                except ValueError:
-                    bot.send_message(message.chat.id, f'Неверный формат ID. Должен быть целым числом')
         else:
             pass
 
@@ -262,7 +268,7 @@ def mainbody():
 update_notice()
 
 nkb = types.ReplyKeyboardRemove()
-bot.send_message(admin_id, f'Бот перезапущен', reply_markup=nkb)
+bot.send_message(read_json()['admin_id'], f'Бот перезапущен', reply_markup=nkb)
 
 while 1 == 1:
     try:
