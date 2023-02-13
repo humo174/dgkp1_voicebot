@@ -9,11 +9,6 @@ def install(package):
     subprocess.check_call([sys.executable, "-m", "pip", "install", package])
 
 
-def read_json():
-    with open(r'creds.json', 'r', encoding='utf-8') as read:
-        return json.load(read)
-
-
 checkImports = False
 while not checkImports:
     try:
@@ -36,7 +31,10 @@ while not checkImports:
         install('python-Levenshtein')
         install('lxml')
 
-bot = telebot.TeleBot(read_json()['bot_api'])
+
+def read_json():
+    with open(r'creds.json', 'r', encoding='utf-8') as read:
+        return json.load(read)
 
 
 def update_notice():
@@ -282,6 +280,9 @@ def lets_rock():
                                                   f'перешлите это сообщение администратору\n\n'
                                                   f'<code>{message.chat.id}</code>',
                                  parse_mode='html')
+
+
+bot = telebot.TeleBot(read_json()['bot_api'])
 
 
 def mainbody():
