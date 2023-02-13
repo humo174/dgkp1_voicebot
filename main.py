@@ -259,28 +259,43 @@ def lets_rock():
                     bot.send_message(message.chat.id, f'Системная ошибка. Запись сохранена в лог. Обратитесь к '
                                                       f'разработчику')
 
-        if message.text == '📢 Озвучить' and message.chat.id in read_json()['allow_users']:
-            kbc = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
-            kbc1 = types.KeyboardButton(text='Отмена')
-            kbc.add(kbc1)
-            msg = bot.send_message(message.chat.id, f'Введите текст для озвучки', reply_markup=kbc)
-            bot.register_next_step_handler(msg, ozvuch)
+        if message.text == '📢 Озвучить':
+            try:
+                bool(read_json()['allow_users'][f'{message.chat.id}'])
+                kbc = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+                kbc1 = types.KeyboardButton(text='Отмена')
+                kbc.add(kbc1)
+                msg = bot.send_message(message.chat.id, f'Введите текст для озвучки', reply_markup=kbc)
+                bot.register_next_step_handler(msg, ozvuch)
+            except KeyError:
+                bot.send_message(message.chat.id, f'У вас нет прав на пользование данным ботом, '
+                                                  f'перешлите это сообщение администратору\n\n'
+                                                  f'<code>{message.chat.id}</code>',
+                                 parse_mode='html')
 
         if message.text == '📄 Сформировать файл':
-            convert_file(message.chat.id)
+            try:
+                bool(read_json()['allow_users'][f'{message.chat.id}'])
+                convert_file(message.chat.id)
+            except KeyError:
+                bot.send_message(message.chat.id, f'У вас нет прав на пользование данным ботом, '
+                                                  f'перешлите это сообщение администратору\n\n'
+                                                  f'<code>{message.chat.id}</code>',
+                                 parse_mode='html')
 
 
 def mainbody():
     @bot.message_handler(commands=['start'])
     def start_command(message):
-        if message.chat.id in read_json()['allow_users']:
+        try:
+            bool(read_json()['allow_users'][f'{message.chat.id}'])
             kb = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
             kb1 = types.KeyboardButton(text='📢 Озвучить')
             kb2 = types.KeyboardButton(text='📄 Сформировать файл')
             kb.add(kb1, kb2)
             bot.send_message(message.chat.id, f'Давай начнем работу!', reply_markup=kb)
             lets_rock()
-        else:
+        except KeyError:
             bot.send_message(message.chat.id, f'У вас нет прав на пользование данным ботом, '
                                               f'перешлите это сообщение администратору\n\n'
                                               f'<code>{message.chat.id}</code>',
