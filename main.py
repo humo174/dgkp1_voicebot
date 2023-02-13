@@ -58,14 +58,34 @@ def add_allow_user(message):
         data = json.load(read)
 
     try:
-        data['allow_users'].append(int(message.text.split(" ")[1]))
+        bool(data['allow_users'][f'{int(message.text.split(" ")[1])}'])
+        bot.send_message(message.chat.id, f'Пользователь с ID = {message.text.split(" ")[1]} уже существует')
+
+    except KeyError:
+        data['allow_users'][f'{int(message.text.split(" ")[1])}'] = message.text.split(" ")[2]
 
         with open(r'creds.json', 'w', encoding='utf-8') as write:
             json.dump(data, write)
 
-        bot.send_message(message.chat.id, f'Добавлен пользователь с ID = {int(message.text.split(" ")[1])}')
+        bot.send_message(message.chat.id, f'Добавлен пользователь с ID = {message.text.split(" ")[1]}, '
+                                          f'{message.text.split(" ")[2]}')
+
     except ValueError:
         bot.send_message(message.chat.id, f'Неверный формат ID')
+
+    except IndexError:
+        bot.send_message(message.chat.id, f'Index Error')
+
+
+def show_allow_users(message):
+    with open(r'creds.json', 'r', encoding='utf-8') as read:
+        data = json.load(read)
+
+    users = ''
+    for i in data['allow_users']:
+        users += f'<code>{i}</code>, {data["allow_users"].get(i)}\n'
+
+    bot.send_message(message.chat.id, users, parse_mode='html')
 
 
 def del_allow_user(message):
@@ -73,13 +93,13 @@ def del_allow_user(message):
         data = json.load(read)
 
     try:
-        data['allow_users'].remove(int(message.text.split(" ")[1]))
+        del data['allow_users'][f'{int(message.text.split(" ")[1])}']
 
         with open(r'creds.json', 'w', encoding='utf-8') as write:
             json.dump(data, write)
 
         bot.send_message(message.chat.id, f'Удален пользователь с ID = {int(message.text.split(" ")[1])}')
-    except ValueError:
+    except (ValueError, KeyError):
         bot.send_message(message.chat.id, f'Пользователь с таким ID не найден')
 
 
@@ -271,14 +291,14 @@ def mainbody():
         if message.chat.id == read_json()['admin_id']:
             if message.text == '/add':
                 pass
-            elif message.text != '/add' and message.text.split(' ')[0] == '/add':
+            elif message.text != '/add' and message.text.split(' ')[0] == '/add' and message.text.split(' ')[2]:
                 add_allow_user(message)
 
         else:
             pass
 
     @bot.message_handler(commands=['del'])
-    def add_command(message):
+    def del_command(message):
         if message.chat.id == read_json()['admin_id']:
             if message.text == '/del':
                 pass
@@ -287,6 +307,11 @@ def mainbody():
 
         else:
             pass
+
+    @bot.message_handler(commands=['sau'])
+    def sau_command(message):
+        if message.chat.id == read_json()['admin_id']:
+            show_allow_users(message)
 
     bot.polling(non_stop=True)
 
