@@ -332,7 +332,8 @@ def mainbody():
 
 update_notice()
 
-bot.send_message(read_json()['admin_id'], f'Бот перезапущен', reply_markup=None)
+rkb = types.ReplyKeyboardRemove()
+bot.send_message(read_json()['admin_id'], f'Бот перезапущен', reply_markup=rkb)
 
 while 1 == 1:
     try:
