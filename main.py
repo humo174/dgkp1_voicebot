@@ -14,6 +14,7 @@ while not checkImports:
     try:
         import telebot
         import openpyxl
+        import paramiko
         from telebot import types
         from speechkit import Session, SpeechSynthesis
         import pandas as pd
@@ -25,6 +26,7 @@ while not checkImports:
         install('pytelegrambotapi')
         install('speechkit')
         install('openpyxl')
+        install('paramiko')
         install('pandas')
         install('xlsxwriter')
         install('thefuzz')
@@ -99,6 +101,27 @@ def del_allow_user(message):
         bot.send_message(message.chat.id, f'Удален пользователь с ID = {int(message.text.split(" ")[1])}')
     except (ValueError, KeyError):
         bot.send_message(message.chat.id, f'Пользователь с таким ID не найден')
+
+
+def reboot_bot(message):
+    try:
+        host = f'{read_json()["host"]["host"]}'
+        user = f'{read_json()["host"]["user"]}'
+        secret = f'{read_json()["host"]["secret"]}'
+        port = 22
+
+        client = paramiko.SSHClient()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        client.connect(hostname=host, username=user, password=secret, port=port)
+        stdin, stdout, stderr = client.exec_command(
+            'sudo docker compose -f /opt/dgkp1_voicebot/docker-compose.yaml restart')
+        data = stdout.read() + stderr.read()
+        client.close()
+    except Exception as exc:
+        bot.send_message(message.chat.id, f'Ошибка при перезагрузке бота')
+        f = open(r'ssh_connection.log', 'a+')
+        f.write(f'{datetime.datetime.now()} | ErrorSSH: {exc}\n')
+        f.close()
 
 
 def convert_file(chatid):
@@ -326,6 +349,11 @@ def mainbody():
     def sau_command(message):
         if message.chat.id == read_json()['admin_id']:
             show_allow_users(message)
+
+    @bot.message_handler(commands=['reboot'])
+    def reboot_command(message):
+        if message.chat.id == read_json()['admin_id']:
+            reboot_bot(message)
 
     bot.polling(non_stop=True)
 
