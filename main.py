@@ -119,7 +119,6 @@ def convert_file(chatid):
         else:
             file_name = f'{message.chat.id}.xls'
             file_info = bot.get_file(message.document.file_id)
-            print(file_info.file_path[-4::])
             if file_info.file_path[-4::] == '.xls':
                 downloaded_file = bot.download_file(file_info.file_path)
                 with open(file_name, 'wb') as new_file:
@@ -170,7 +169,7 @@ def convert_file(chatid):
                     workbook.close()
                     workbook1.close()
 
-                    time.sleep(4)
+                    time.sleep(2)
                     kb = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
                     kb1 = types.KeyboardButton(text='📢 Озвучить')
                     kb2 = types.KeyboardButton(text='📄 Сформировать файл')
@@ -190,7 +189,6 @@ def convert_file(chatid):
                                                             f'.xlsx', reply_markup=kb)
 
                 except (ImportError, ValueError):
-                    time.sleep(2)
                     conv_file = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
                     conv_file_1 = types.KeyboardButton(text='Отмена')
                     conv_file.add(conv_file_1)
@@ -334,8 +332,7 @@ def mainbody():
 
 update_notice()
 
-nkb = types.ReplyKeyboardRemove()
-bot.send_message(read_json()['admin_id'], f'Бот перезапущен', reply_markup=nkb)
+bot.send_message(read_json()['admin_id'], f'Бот перезапущен', reply_markup=None)
 
 while 1 == 1:
     try:
