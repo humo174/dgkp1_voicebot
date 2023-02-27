@@ -19,7 +19,6 @@ while not checkImports:
         from speechkit import Session, SpeechSynthesis
         import pandas as pd
         import xlsxwriter
-        from thefuzz import fuzz as f
 
         checkImports = True
     except ImportError:
@@ -29,8 +28,6 @@ while not checkImports:
         install('paramiko')
         install('pandas')
         install('xlsxwriter')
-        install('thefuzz')
-        install('python-Levenshtein')
         install('lxml')
 
 
@@ -160,11 +157,10 @@ def convert_file(chatid):
                         df3 = pd.DataFrame(columns=['ФИО', "Номер"])
                         df2 = df2[(df2.ФИО != "ФИО пациента")]
                         df4 = df2[df2['Номер'].isnull()].reset_index()
+                        df2 = df2.drop(labels=[0], axis=0)
                         df2 = df2.dropna().reset_index()
-
                         for i in range(len(df2)):
-                            if f.WRatio('Врач: ', df2['ФИО'][i]) < 70:
-                                for c in range(0, (df2['Номер'][i].count(',') + 1)):
+                            for c in range(0, (df2['Номер'][i].count(',') + 1)):
                                     if df2['Номер'][i].count(',') >= 1:
                                         df3 = df3.append({'ФИО': df2['ФИО'][i], 'Номер': (
                                             ((((df2['Номер'][i].split(",")[c]).replace("(", "")).replace(
@@ -363,10 +359,10 @@ update_notice()
 rkb = types.ReplyKeyboardRemove()
 bot.send_message(read_json()['admin_id'], f'Бот перезапущен', reply_markup=rkb)
 
-while 1 == 1:
-    try:
-        mainbody()
-    except Exception as exc:
-        f = open(r'error_connection.log', 'a+')
-        f.write(f'{datetime.datetime.now()} | ErrorConnection: {exc}\n')
-        f.close()
+# while 1 == 1:
+# try:
+mainbody()
+# except Exception as exc:
+#     f = open(r'error_connection.log', 'a+')
+#     f.write(f'{datetime.datetime.now()} | ErrorConnection: {exc}\n')
+#     f.close()
