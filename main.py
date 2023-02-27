@@ -31,7 +31,7 @@ while not checkImports:
         install('lxml')
 
 
-def read_json():
+def creds():
     with open(r'creds.json', 'r', encoding='utf-8') as read:
         return json.load(read)
 
@@ -43,7 +43,7 @@ def update_notice():
     except FileNotFoundError:
         with open('update.md', 'r', encoding='utf-8') as update_open:
             notice = update_open.read()
-            for user in read_json()['allow_users']:
+            for user in creds()['allow_users']:
                 bot.send_message(user, f'{notice}', parse_mode='html')
 
         with open('updatedone', 'w+', encoding='utf-8') as done:
@@ -102,9 +102,9 @@ def del_allow_user(message):
 
 def reboot_bot(message):
     try:
-        host = f'{read_json()["host"]["host"]}'
-        user = f'{read_json()["host"]["user"]}'
-        secret = f'{read_json()["host"]["secret"]}'
+        host = f'{creds()["host"]["host"]}'
+        user = f'{creds()["host"]["user"]}'
+        secret = f'{creds()["host"]["secret"]}'
         port = 22
 
         client = paramiko.SSHClient()
@@ -251,8 +251,8 @@ def lets_rock():
                 kbcl = types.ReplyKeyboardRemove()
                 try:
                     bot.send_message(message.chat.id, f'Дождитесь формирования аудиофайла', reply_markup=kbcl)
-                    session = Session.from_yandex_passport_oauth_token(read_json()['oauth_token'],
-                                                                       read_json()['catalog_id'])
+                    session = Session.from_yandex_passport_oauth_token(creds()['oauth_token'],
+                                                                       creds()['catalog_id'])
                     synthesizeaudio = SpeechSynthesis(session)
                     synthesizeaudio.synthesize(
                         str(f'{message.chat.id}-out.wav'), text=f'{text_to_sound}',
@@ -276,7 +276,7 @@ def lets_rock():
 
         if message.text == '📢 Озвучить':
             try:
-                bool(read_json()['allow_users'][f'{message.chat.id}'])
+                bool(creds()['allow_users'][f'{message.chat.id}'])
                 kbc = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
                 kbc1 = types.KeyboardButton(text='Отмена')
                 kbc.add(kbc1)
@@ -290,7 +290,7 @@ def lets_rock():
 
         if message.text == '📄 Сформировать файл':
             try:
-                bool(read_json()['allow_users'][f'{message.chat.id}'])
+                bool(creds()['allow_users'][f'{message.chat.id}'])
                 convert_file(message.chat.id)
             except KeyError:
                 bot.send_message(message.chat.id, f'У вас нет прав на пользование данным ботом, '
@@ -299,14 +299,14 @@ def lets_rock():
                                  parse_mode='html')
 
 
-bot = telebot.TeleBot(read_json()['bot_api'])
+bot = telebot.TeleBot(creds()['bot_api'])
 
 
 def mainbody():
     @bot.message_handler(commands=['start'])
     def start_command(message):
         try:
-            bool(read_json()['allow_users'][f'{message.chat.id}'])
+            bool(creds()['allow_users'][f'{message.chat.id}'])
             kb = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
             kb1 = types.KeyboardButton(text='📢 Озвучить')
             kb2 = types.KeyboardButton(text='📄 Сформировать файл')
@@ -321,7 +321,7 @@ def mainbody():
 
     @bot.message_handler(commands=['add'])
     def add_command(message):
-        if message.chat.id == read_json()['admin_id']:
+        if message.chat.id == creds()['admin_id']:
             if message.text == '/add':
                 pass
             elif message.text != '/add' and message.text.split(' ')[0] == '/add' and message.text.split(' ')[2]:
@@ -332,7 +332,7 @@ def mainbody():
 
     @bot.message_handler(commands=['del'])
     def del_command(message):
-        if message.chat.id == read_json()['admin_id']:
+        if message.chat.id == creds()['admin_id']:
             if message.text == '/del':
                 pass
             elif message.text != '/del' and message.text.split(' ')[0] == '/del':
@@ -343,12 +343,12 @@ def mainbody():
 
     @bot.message_handler(commands=['sau'])
     def sau_command(message):
-        if message.chat.id == read_json()['admin_id']:
+        if message.chat.id == creds()['admin_id']:
             show_allow_users(message)
 
     @bot.message_handler(commands=['reboot'])
     def reboot_command(message):
-        if message.chat.id == read_json()['admin_id']:
+        if message.chat.id == creds()['admin_id']:
             reboot_bot(message)
 
     bot.polling(non_stop=True)
@@ -357,7 +357,7 @@ def mainbody():
 update_notice()
 
 rkb = types.ReplyKeyboardRemove()
-bot.send_message(read_json()['admin_id'], f'Бот перезапущен', reply_markup=rkb)
+bot.send_message(creds()['admin_id'], f'Бот перезапущен', reply_markup=rkb)
 
 # while 1 == 1:
 # try:
