@@ -161,14 +161,14 @@ def convert_file(chatid):
                         df2 = df2.dropna().reset_index()
                         for i in range(len(df2)):
                             for c in range(0, (df2['Номер'][i].count(',') + 1)):
-                                    if df2['Номер'][i].count(',') >= 1:
-                                        df3 = df3.append({'ФИО': df2['ФИО'][i], 'Номер': (
-                                            ((((df2['Номер'][i].split(",")[c]).replace("(", "")).replace(
-                                                ")", "")).replace("-", "")).replace(" ", "")[2::])}, ignore_index=True)
-                                    else:
-                                        df3 = df3.append({'ФИО': df2['ФИО'][i], 'Номер': (
-                                            ((((df2['Номер'][i].split(",")[0]).replace("(", "")).replace(
-                                                ")", "")).replace("-", "")).replace(" ", "")[2::])}, ignore_index=True)
+                                if df2['Номер'][i].count(',') >= 1:
+                                    df3 = df3.append({'ФИО': df2['ФИО'][i], 'Номер': (
+                                        ((((df2['Номер'][i].split(",")[c]).replace("(", "")).replace(
+                                            ")", "")).replace("-", "")).replace(" ", "")[2::])}, ignore_index=True)
+                                else:
+                                    df3 = df3.append({'ФИО': df2['ФИО'][i], 'Номер': (
+                                        ((((df2['Номер'][i].split(",")[0]).replace("(", "")).replace(
+                                            ")", "")).replace("-", "")).replace(" ", "")[2::])}, ignore_index=True)
 
                         df5 = df5.append(df3, ignore_index=True)
                         df6 = df6.append(df4, ignore_index=True)
@@ -359,10 +359,12 @@ update_notice()
 rkb = types.ReplyKeyboardRemove()
 bot.send_message(creds()['admin_id'], f'Бот перезапущен', reply_markup=rkb)
 
-# while 1 == 1:
-# try:
-mainbody()
-# except Exception as exc:
-#     f = open(r'error_connection.log', 'a+')
-#     f.write(f'{datetime.datetime.now()} | ErrorConnection: {exc}\n')
-#     f.close()
+while 1 == 1:
+    try:
+        mainbody()
+    except Exception as exc:
+        f = open(r'error_connection.log', 'a+')
+        f.write(f'{datetime.datetime.now().strftime("%d.%m.%Y-%H:%M:%S")} | Error: {type(exc)} {exc}\n')
+        f.close()
+        # print(f'{datetime.datetime.now().strftime("%d.%m.%Y-%H:%M:%S")} | Error: {type(exc)} {exc}\n')
+        time.sleep(15)
