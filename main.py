@@ -151,7 +151,6 @@ def convert_file(chatid):
                     df6 = pd.DataFrame()
                     for j in range(len(df)):
                         df2 = pd.DataFrame(df[j])
-                        df4 = pd.DataFrame(columns=['ФИО'])
                         df2 = df2.drop(columns=[0, 2, 3, 4, 5, 6, 8, 9, 10], axis=1)
                         df2 = df2.rename(columns={1: "ФИО", 7: "Номер"})
                         df3 = pd.DataFrame(columns=['ФИО', "Номер"])
