@@ -187,8 +187,6 @@ def convert_file(chatid):
                         worksheet.write('B' + str(i + 2), str(df5['ФИО'][i]))
                     workbook.close()
                     workbook1.close()
-
-                    time.sleep(2)
                     kb = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
                     kb1 = types.KeyboardButton(text='📢 Озвучить')
                     kb2 = types.KeyboardButton(text='📄 Сформировать файл')
@@ -351,8 +349,6 @@ def mainbody():
         if message.chat.id == creds()['admin_id']:
             reboot_bot(message)
 
-    bot.polling(non_stop=True)
-
 
 update_notice()
 
@@ -363,8 +359,8 @@ while 1 == 1:
     try:
         mainbody()
     except Exception as exc:
-        f = open(r'error_connection.log', 'a+')
-        f.write(f'{datetime.datetime.now().strftime("%d.%m.%Y-%H:%M:%S")} | Error: {type(exc)} {exc}\n')
+        f = open(r'error_connection.log', 'a+', encoding='utf-8')
+        f.write(f'{datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S")} | Error: {type(exc)} {exc}\n')
         f.close()
-        # print(f'{datetime.datetime.now().strftime("%d.%m.%Y-%H:%M:%S")} | Error: {type(exc)} {exc}\n')
-        time.sleep(15)
+        print(f'{datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S")} | Error: {type(exc)} {exc}')
+        time.sleep(20)
