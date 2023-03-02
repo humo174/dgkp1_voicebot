@@ -187,6 +187,7 @@ def convert_file(chatid):
                         worksheet.write('B' + str(i + 2), str(df5['ФИО'][i]))
                     workbook.close()
                     workbook1.close()
+
                     kb = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
                     kb1 = types.KeyboardButton(text='📢 Озвучить')
                     kb2 = types.KeyboardButton(text='📄 Сформировать файл')
@@ -349,6 +350,8 @@ def mainbody():
         if message.chat.id == creds()['admin_id']:
             reboot_bot(message)
 
+    bot.polling(non_stop=True)
+
 
 update_notice()
 
@@ -359,7 +362,7 @@ while 1 == 1:
     try:
         mainbody()
     except Exception as exc:
-        with open(r'error_connection.log', 'a+') as errorfile:
+        with open(r'error_connection.log', 'a+', encoding='utf-8') as errorfile:
             errorfile.write(f'{datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S")} | Error: {type(exc)} {exc}\n')
 
-        time.sleep(20)
+        time.sleep(15)
