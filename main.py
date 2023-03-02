@@ -359,8 +359,7 @@ while 1 == 1:
     try:
         mainbody()
     except Exception as exc:
-        f = open(r'error_connection.log', 'a+', encoding='utf-8')
-        f.write(f'{datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S")} | Error: {type(exc)} {exc}\n')
-        f.close()
-        print(f'{datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S")} | Error: {type(exc)} {exc}')
+        with open(r'error_connection.log', 'a+') as errorfile:
+            errorfile.write(f'{datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S")} | Error: {type(exc)} {exc}\n')
+
         time.sleep(20)
