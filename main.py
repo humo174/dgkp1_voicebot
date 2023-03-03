@@ -357,7 +357,7 @@ update_notice()
 rkb = types.ReplyKeyboardRemove()
 bot.send_message(creds()['admin_id'], f'Бот перезапущен', reply_markup=rkb)
 
-while 1 == 1:
+while True:
     try:
         mainbody()
     except Exception as exc:
