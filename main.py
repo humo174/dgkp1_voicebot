@@ -137,73 +137,191 @@ def convert_file(chatid):
             kb.add(kb1, kb2)
             bot.send_message(message.chat.id, f'Действие отменено', reply_markup=kb)
         else:
-            file_name = f'{message.chat.id}.xls'
             file_info = bot.get_file(message.document.file_id)
             if file_info.file_path[-4::] == '.xls':
+                file_name = f'{message.chat.id}.xls'
                 downloaded_file = bot.download_file(file_info.file_path)
                 with open(file_name, 'wb') as new_file:
                     new_file.write(downloaded_file)
 
                 try:
                     df = pd.read_html(f'{message.chat.id}.xls')
-                    bot.send_message(message.chat.id, f'Обрабатываю файл')
-                    df5 = pd.DataFrame()
-                    df6 = pd.DataFrame()
-                    for j in range(len(df)):
-                        df2 = pd.DataFrame(df[j])
-                        df2 = df2.drop(columns=[0, 2, 3, 4, 5, 6, 8, 9, 10], axis=1)
-                        df2 = df2.rename(columns={1: "ФИО", 7: "Номер"})
-                        df3 = pd.DataFrame(columns=['ФИО', "Номер"])
-                        df2 = df2[(df2.ФИО != "ФИО пациента")]
-                        df4 = df2[df2['Номер'].isnull()].reset_index()
-                        df2 = df2.drop(labels=[0], axis=0)
-                        df2 = df2.dropna().reset_index()
-                        for i in range(len(df2)):
-                            for c in range(0, (df2['Номер'][i].count(',') + 1)):
-                                if df2['Номер'][i].count(',') >= 1:
-                                    df3 = df3.append({'ФИО': df2['ФИО'][i], 'Номер': (
-                                        ((((df2['Номер'][i].split(",")[c]).replace("(", "")).replace(
-                                            ")", "")).replace("-", "")).replace(" ", "")[2::])}, ignore_index=True)
+                    cols = len(df[0].axes[1])
+                    if cols == 11:
+                        try:
+                            df = pd.read_html(f'{message.chat.id}.xls')
+                            bot.send_message(message.chat.id, f'Обрабатываю файл')
+                            df5 = pd.DataFrame()
+                            df6 = pd.DataFrame()
+                            for j in range(len(df)):
+                                df2 = pd.DataFrame(df[j])
+                                df2 = df2.drop(columns=[0, 2, 3, 4, 5, 6, 8, 9, 10], axis=1)
+                                df2 = df2.rename(columns={1: "ФИО", 7: "Номер"})
+                                df3 = pd.DataFrame(columns=['ФИО', "Номер"])
+                                df2 = df2[(df2.ФИО != "ФИО пациента")]
+                                df4 = df2[df2['Номер'].isnull()].reset_index()
+                                df2 = df2.drop(labels=[0], axis=0)
+                                df2 = df2.dropna().reset_index()
+                                for i in range(len(df2)):
+                                    for c in range(0, (df2['Номер'][i].count(',') + 1)):
+                                        if df2['Номер'][i].count(',') >= 1:
+                                            df3 = df3.append({'ФИО': df2['ФИО'][i], 'Номер': (
+                                                ((((df2['Номер'][i].split(",")[c]).replace("(", "")).replace(
+                                                    ")", "")).replace("-", "")).replace(" ", "")[2::])}, ignore_index=True)
+                                        else:
+                                            df3 = df3.append({'ФИО': df2['ФИО'][i], 'Номер': (
+                                                ((((df2['Номер'][i].split(",")[0]).replace("(", "")).replace(
+                                                    ")", "")).replace("-", "")).replace(" ", "")[2::])}, ignore_index=True)
+
+                                df5 = df5.append(df3, ignore_index=True)
+                                df6 = df6.append(df4, ignore_index=True)
+
+                            workbook = xlsxwriter.Workbook(f'{message.chat.id}-converted.xlsx')
+                            workbook1 = xlsxwriter.Workbook(f'{message.chat.id}-declined.xlsx')
+                            worksheet = workbook.add_worksheet('Лист1')
+                            worksheet1 = workbook1.add_worksheet('Лист1')
+                            worksheet.write('A1', 'Номер')
+                            worksheet.write('B1', 'Комментарий')
+                            worksheet1.write('A1', 'ФИО')
+                            for i in range(len(df6)):
+                                worksheet1.write('A' + str(i + 2), str(df6['ФИО'][i]))
+                            for i in range(len(df5)):
+                                worksheet.write('A' + str(i + 2), str(df5['Номер'][i]))
+                                worksheet.write('B' + str(i + 2), str(df5['ФИО'][i]))
+                            workbook.close()
+                            workbook1.close()
+
+                            kb = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+                            kb1 = types.KeyboardButton(text='📢 Озвучить')
+                            kb2 = types.KeyboardButton(text='📄 Сформировать файл')
+                            kb.add(kb1, kb2)
+                            with open(f'{message.chat.id}-converted.xlsx', 'rb') as converted_file:
+                                bot.send_document(message.chat.id,
+                                                  caption='Готовый файл для автообзвона\n'
+                                                          'Просто импортируй его в ВАТС "Ростелеком"',
+                                                  document=converted_file, parse_mode='html',
+                                                  visible_file_name=f'Автообзвон {datetime.datetime.now().strftime("%d-%m-%Y")}'
+                                                                    f'.xlsx')
+
+                            with open(f'{message.chat.id}-declined.xlsx', 'rb') as declined_file:
+                                bot.send_document(message.chat.id, caption="Отклоненные пациенты без номера телефона",
+                                                  document=declined_file,
+                                                  visible_file_name=f'Отклонено {datetime.datetime.now().strftime("%d-%m-%Y")}'
+                                                                    f'.xlsx', reply_markup=kb)
+
+                        except (ImportError, ValueError):
+                            conv_file = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+                            conv_file_1 = types.KeyboardButton(text='Отмена')
+                            conv_file.add(conv_file_1)
+                            msg = bot.send_message(message.chat.id, f'Ошибка при обработке файла\nЗагруженный файл '
+                                                                    f'не соответствует структуре. Убедитесь, что '
+                                                                    f'загружаемый'
+                                                                    f'файл является исходным из РМИС "БАРС"\n\n'
+                                                                    f'Ожидаю правильный файл',
+                                                   reply_markup=conv_file)
+                            bot.register_next_step_handler(msg, lets_convert)
+                    elif cols == 4:
+                        try:
+                            df = pd.read_html(f'{message.chat.id}.xls')
+                            for i in df[1]:
+                                print(i)
+
+                            data = {}
+                            for i in df[1]:
+                                for j in df[1][i]:
+                                    if j == 'Фамилия':
+                                        data['Фамилия'] = i
+                                    if j == 'Имя':
+                                        data['Имя'] = i
+                                    if j == 'Отчество':
+                                        data['Отчество'] = i
+                                    if j == 'Телефон':
+                                        data['Телефон'] = i
+
+                            df2 = pd.DataFrame()
+
+                            for i in data:
+                                df2[f'{i}'] = df[1][data[i]]
+
+                            df2 = df2.drop(labels=[0], axis=0)
+                            df2.insert(0, 'FIO',
+                                       df2['Фамилия'].astype(str) + ' ' + df2['Имя'].astype(str) + ' ' + df2[
+                                           'Отчество'].astype(
+                                           str))
+                            df2 = df2.drop(columns=['Фамилия', 'Имя', 'Отчество'], axis=1)
+
+                            data = []
+                            for i in range(1, len(df2) + 1):
+                                person_string = ''
+                                for j in df2:
+                                    person_string += f'{df2[j][i]}|'
+                                data.append({'FIO': f'{person_string[:-1:].split("|")[0]}',
+                                             'Number': f'{person_string[:-1:].split("|")[1]}'})
+
+                            wb = xlsxwriter.Workbook(f'{message.chat.id}-converted-analytics.xlsx')
+                            wb_d = xlsxwriter.Workbook(f'{message.chat.id}-declined-analytics.xlsx')
+                            ws = wb.add_worksheet('Лист1')
+                            ws_d = wb_d.add_worksheet('Лист1')
+
+                            ws.write('A1', 'Номер телефона')
+                            ws.write('B1', 'Комментарий')
+
+                            ws_d.write('A1', 'ФИО')
+
+                            row = 1
+                            row_d = 1
+                            for i in range(len(data)):
+                                if data[i]['Number'] == 'nan':
+                                    ws_d.write(row_d, 0, data[i]['FIO'])
+                                    row_d += 1
+                                elif data[i]['Number'].count(';') > 0:
+                                    for j in range(data[i]['Number'].count(';') + 1):
+                                        number = data[i]['Number'].split(';')[j][2::].replace('(', '').replace(')',
+                                                                                                               '').replace(
+                                            '-', '')
+                                        number = number.replace(' ', '')
+                                        ws.write(row, 0, number)
+                                        ws.write(row, 1, data[i]['FIO'])
+                                        row += 1
                                 else:
-                                    df3 = df3.append({'ФИО': df2['ФИО'][i], 'Номер': (
-                                        ((((df2['Номер'][i].split(",")[0]).replace("(", "")).replace(
-                                            ")", "")).replace("-", "")).replace(" ", "")[2::])}, ignore_index=True)
+                                    number = data[i]['Number'][2::].replace('(', '').replace(')', '').replace('-',
+                                                                                                              '').replace(
+                                        ' ', '')
+                                    ws.write(row, 0, number)
+                                    ws.write(row, 1, data[i]['FIO'])
+                                    row += 1
 
-                        df5 = df5.append(df3, ignore_index=True)
-                        df6 = df6.append(df4, ignore_index=True)
+                            wb.close()
+                            wb_d.close()
 
-                    workbook = xlsxwriter.Workbook(f'{message.chat.id}-converted.xlsx')
-                    workbook1 = xlsxwriter.Workbook(f'{message.chat.id}-declined.xlsx')
-                    worksheet = workbook.add_worksheet('Лист1')
-                    worksheet1 = workbook1.add_worksheet('Лист1')
-                    worksheet.write('A1', 'Номер')
-                    worksheet.write('B1', 'Комментарий')
-                    worksheet1.write('A1', 'ФИО')
-                    for i in range(len(df6)):
-                        worksheet1.write('A' + str(i + 2), str(df6['ФИО'][i]))
-                    for i in range(len(df5)):
-                        worksheet.write('A' + str(i + 2), str(df5['Номер'][i]))
-                        worksheet.write('B' + str(i + 2), str(df5['ФИО'][i]))
-                    workbook.close()
-                    workbook1.close()
+                            kb = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+                            kb1 = types.KeyboardButton(text='📢 Озвучить')
+                            kb2 = types.KeyboardButton(text='📄 Сформировать файл')
+                            kb.add(kb1, kb2)
+                            with open(f'{message.chat.id}-converted-analytics.xlsx', 'rb') as converted_file:
+                                bot.send_document(message.chat.id,
+                                                  caption='Готовый файл для автообзвона\n'
+                                                          'Просто импортируй его в ВАТС "Ростелеком"',
+                                                  document=converted_file, parse_mode='html',
+                                                  visible_file_name=f'Автообзвон {datetime.datetime.now().strftime("%d-%m-%Y")}'
+                                                                    f'.xlsx')
 
-                    kb = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
-                    kb1 = types.KeyboardButton(text='📢 Озвучить')
-                    kb2 = types.KeyboardButton(text='📄 Сформировать файл')
-                    kb.add(kb1, kb2)
-                    with open(f'{message.chat.id}-converted.xlsx', 'rb') as converted_file:
-                        bot.send_document(message.chat.id,
-                                          caption='Готовый файл для автообзвона\n'
-                                                  'Просто импортируй его в ВАТС "Ростелеком"',
-                                          document=converted_file, parse_mode='html',
-                                          visible_file_name=f'Автообзвон {datetime.datetime.now().strftime("%d-%m-%Y")}'
-                                                            f'.xlsx')
+                            with open(f'{message.chat.id}-declined-analytics.xlsx', 'rb') as declined_file:
+                                bot.send_document(message.chat.id, caption="Отклоненные пациенты без номера телефона",
+                                                  document=declined_file,
+                                                  visible_file_name=f'Отклонено {datetime.datetime.now().strftime("%d-%m-%Y")}'
+                                                                    f'.xlsx', reply_markup=kb)
 
-                    with open(f'{message.chat.id}-declined.xlsx', 'rb') as declined_file:
-                        bot.send_document(message.chat.id, caption="Отклоненные пациенты без номера телефона",
-                                          document=declined_file,
-                                          visible_file_name=f'Отклонено {datetime.datetime.now().strftime("%d-%m-%Y")}'
-                                                            f'.xlsx', reply_markup=kb)
+                        except (ImportError, ValueError):
+                            conv_file = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+                            conv_file_1 = types.KeyboardButton(text='Отмена')
+                            conv_file.add(conv_file_1)
+                            msg = bot.send_message(message.chat.id, f'Ошибка при обработке файла\nЗагруженный файл '
+                                                                    f'не соответствует структуре. Убедитесь, что загружаемый '
+                                                                    f'файл является исходным из РМИС "БАРС"\n\n'
+                                                                    f'Ожидаю правильный файл',
+                                                   reply_markup=conv_file)
+                            bot.register_next_step_handler(msg, lets_convert)
 
                 except (ImportError, ValueError):
                     conv_file = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
